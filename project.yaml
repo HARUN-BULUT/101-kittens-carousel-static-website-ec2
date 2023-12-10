@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  This is my first
+  template for
+  using Cloudformation.
+    
+Resources:
+  harunInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0230bd60aa48260c6
+      InstanceType: t2.micro
+      KeyName: firstkey # Use your own keypair without .pem
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          yum install -y wget
+          cd /var/www/html
+          wget https://raw.githubusercontent.com/HARUN-BULUT/101-kittens-carousel-static-website-ec2/main/static-web/index.html
+          wget https://raw.githubusercontent.com/HARUN-BULUT/101-kittens-carousel-static-website-ec2/main/static-web/cat0.jpg
+          wget https://raw.githubusercontent.com/HARUN-BULUT/101-kittens-carousel-static-website-ec2/main/static-web/cat1.jpg
+          wget https://raw.githubusercontent.com/HARUN-BULUT/101-kittens-carousel-static-website-ec2/main/static-web/cat2.jpg
+      SecurityGroups:
+        - !Ref harunSecGrp
+      Tags: 
+        - Key: Name
+          Value: Harun-instance
+  harunSecGrp:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows only SSH connection # Required
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
