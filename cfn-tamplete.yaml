@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  Kittens Carousel is a static website application deployed with Apache Web Server on
+  AWS Elastic Compute Cloud (EC2) Instance using AWS Cloudformation Service.
+
+  
+Parameters:
+  imageID:
+   Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+   Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64'
+  KeyPair:
+    Description: Choose your keypair
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: firstkey 
+  instanceType:
+    Description: Choose your istance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t2.large
+  
+Resources:
+
+  myWebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+ 
+      ImageId: !Ref imageID
+      InstanceType: !Ref instanceType
+      KeyName: !Ref KeyPair
+      SecurityGroupIds: 
+        - !Ref mySecGrp # !GetAtt mySecGrp.GroupId
+
+      Tags: 
+      - Key: Name
+        Value:  !Sub ${AWS::StackName}
+      UserData: !Base64 |
+        #! /bin/bash
+        yum update -y
+        yum install httpd -y
+        FOLDER="https://raw.githubusercontent.com/HARUN-BULUT/101-kittens-carousel-static-website-ec2/main/static-web"
+        cd /var/www/html
+        wget ${FOLDER}/index.html
+        wget ${FOLDER}/cat0.jpg
+        wget ${FOLDER}/cat1.jpg
+        wget ${FOLDER}/cat2.jpg
+        wget ${FOLDER}/cat3.png
+        systemctl start httpd
+        systemctl enable httpd 
+ 
+  mySecGrp:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "ssh and http" # Required
+      GroupName: "harun-kitchen-project-scgrp"
+      SecurityGroupIngress: 
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
+
+Outputs:
+  webSiteURL:
+    Description: URL of webside 
+    Value: !Sub
+      - http://${PublicDNS}'
+      - PublicDNS: !GetAtt myWebServer.PublicDnsName
